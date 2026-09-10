@@ -1,7 +1,62 @@
-# Frontend
+# Frontend (DocConvert)
 
-React + TypeScript UI for the document processing platform.
+React + TypeScript UI for upload, preview, convert, download/delete, and local history.
 
-**Not started yet.** Implementation begins in [Phase 4](../plans/05-phase-4-frontend.md).
+## Prerequisites
 
-Until then this folder is a placeholder so the monorepo layout matches the plans.
+- Node.js 20+
+- Backend running (venv uvicorn on `:8000` or Docker API on `:8008`)
+
+## Setup
+
+```powershell
+cd frontend
+npm install
+```
+
+Copy env example if you need overrides:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+## Run
+
+Dual terminals:
+
+```powershell
+# terminal 1 — backend (venv)
+cd backend
+.\.venv\Scripts\Activate.ps1
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+# terminal 2 — frontend
+cd frontend
+npm run dev
+```
+
+Open http://127.0.0.1:5173
+
+Vite proxies `/api` and `/health` to `VITE_PROXY_TARGET` (default `http://127.0.0.1:8000`).
+
+For Docker API on host port **8008**:
+
+```powershell
+$env:VITE_PROXY_TARGET="http://127.0.0.1:8008"
+npm run dev
+```
+
+## Scripts
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Vite dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+| `npm test` | Vitest unit tests |
+| `npm run lint` | Oxlint |
+
+## Notes
+
+- History is stored in `localStorage` until Phase 5 (Postgres).
+- Convert is sync today; Phase 6 can swap to job polling behind `src/api/documents.ts`.

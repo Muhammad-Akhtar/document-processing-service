@@ -30,7 +30,8 @@ docker compose run --rm --build test   # full pytest in Linux (WeasyPrint includ
 | 1 Backend foundation | Done |
 | 2 HTML → PDF | Done |
 | 3 PDF → HTML | Done |
-| 4+ | Follow [`plans/00-INDEX.md`](plans/00-INDEX.md) |
+| 4 Frontend | Done |
+| 5+ | Follow [`plans/00-INDEX.md`](plans/00-INDEX.md) |
 
 ### Quick start (backend)
 
@@ -43,3 +44,13 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 Health: http://127.0.0.1:8000/health — details in [`backend/README.md`](backend/README.md).
+
+### Quick start (frontend)
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+UI: http://127.0.0.1:5173 — details in [`frontend/README.md`](frontend/README.md).

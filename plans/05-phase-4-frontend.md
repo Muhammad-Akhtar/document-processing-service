@@ -11,9 +11,11 @@ Build a React + TypeScript UI for upload, conversion, preview, download/delete, 
 
 ## Prerequisites
 
-- [ ] Backend convertible via `/api/v1` (Phases 1–3)
-- [ ] CORS configured for Vite/dev origin in backend settings
-- [ ] Node.js 20+ installed
+- [x] Backend convertible via `/api/v1` (Phases 1–3)
+- [x] CORS configured for Vite/dev origin in backend settings
+- [x] Node.js 20+ installed
+
+**TDD:** unit tests for formats/history/api helpers. **Push:** `git push origin master` after acceptance criteria pass.
 
 ---
 
@@ -21,46 +23,46 @@ Build a React + TypeScript UI for upload, conversion, preview, download/delete, 
 
 ### Task 4.1 — Scaffold frontend
 
-- [ ] Create Vite + React + TypeScript app in `frontend/`
-- [ ] ESLint + basic folder structure: `src/api`, `src/components`, `src/pages`, `src/types`
-- [ ] Env: `VITE_API_BASE_URL=http://localhost:8000`
-- [ ] `frontend/README.md` with `npm install` / `npm run dev`
+- [x] Create Vite + React + TypeScript app in `frontend/`
+- [x] ESLint + basic folder structure: `src/api`, `src/components`, `src/pages`, `src/types` (oxlint from Vite scaffold)
+- [x] Env: `VITE_API_BASE_URL` + `VITE_PROXY_TARGET` (see `.env.example`)
+- [x] `frontend/README.md` with `npm install` / `npm run dev`
 
 ### Task 4.2 — API client
 
-- [ ] Typed fetch/axios wrapper for documents & conversions
-- [ ] Shared TypeScript types mirroring Pydantic schemas
-- [ ] Error toast/banner for API failures
+- [x] Typed fetch wrapper for documents & conversions
+- [x] Shared TypeScript types mirroring Pydantic schemas
+- [x] Error toast/banner for API failures
 
 ### Task 4.3 — Drag & drop uploads
 
-- [ ] Drop zone + file picker
-- [ ] Accept HTML/PDF (extend later)
-- [ ] Client-side size check mirroring backend max
-- [ ] Upload progress (XHR/fetch progress if available)
+- [x] Drop zone + file picker
+- [x] Accept HTML/PDF (extend later)
+- [x] Client-side size check mirroring backend max
+- [x] Upload progress (XHR progress)
 
 ### Task 4.4 — Progress indicator
 
-- [ ] Upload progress bar
-- [ ] Conversion in-progress state (sync API: spinner until response; later swap to job polling in Phase 6)
+- [x] Upload progress bar
+- [x] Conversion in-progress state (sync API: spinner until response; later swap to job polling in Phase 6)
 
 ### Task 4.5 — Document preview
 
-- [ ] PDF: `<iframe>` / `<object>` / pdf.js — pick one simple approach
-- [ ] HTML: sandboxed iframe (`sandbox` attributes) loading preview URL
-- [ ] Empty state when nothing selected
+- [x] PDF: `<iframe>` loading preview URL
+- [x] HTML: sandboxed iframe (`sandbox` attributes) loading preview URL
+- [x] Empty state when nothing selected
 
 ### Task 4.6 — Convert / download / delete actions
 
-- [ ] Convert button: choose target format based on source (HTML→PDF, PDF→HTML)
-- [ ] Download original and converted outputs
-- [ ] Delete with confirm dialog
+- [x] Convert button: choose target format based on source (HTML→PDF, PDF→HTML)
+- [x] Download original and converted outputs
+- [x] Delete with confirm dialog
 
 ### Task 4.7 — Conversion history (client-side first)
 
-- [ ] Until Postgres (Phase 5), keep history in `localStorage` or session list from current uploads
-- [ ] Show filename, type, status, timestamps
-- [ ] Clicking a row loads preview
+- [x] Until Postgres (Phase 5), keep history in `localStorage`
+- [x] Show filename, type, status, timestamps
+- [x] Clicking a row loads preview
 
 ### Task 4.8 — App shell
 
@@ -70,23 +72,23 @@ Wireframe targets from vision:
 DocConvert | Upload | Preview | Convert | Download | Delete
 ```
 
-- [ ] Simple top bar with product name
-- [ ] Single main workspace (avoid dashboard clutter)
-- [ ] Responsive enough for desktop-first; usable on tablet
+- [x] Simple top bar with product name
+- [x] Single main workspace (avoid dashboard clutter)
+- [x] Responsive enough for desktop-first; usable on tablet
 
 ### Task 4.9 — Dev ergonomics
 
-- [ ] Proxy or CORS so local Vite ↔ uvicorn works
-- [ ] Document dual-run: terminal 1 backend venv, terminal 2 `npm run dev`
+- [x] Proxy or CORS so local Vite ↔ uvicorn works
+- [x] Document dual-run: terminal 1 backend venv, terminal 2 `npm run dev`
 
 ---
 
 ## Acceptance criteria
 
-- [ ] User can upload HTML, convert to PDF, preview/download without using Swagger
-- [ ] User can upload PDF, convert to HTML, preview
-- [ ] Delete works; history lists recent items
-- [ ] Frontend README is enough for an agent to run the UI
+- [x] User can upload HTML, convert to PDF, preview/download without using Swagger
+- [x] User can upload PDF, convert to HTML, preview
+- [x] Delete works; history lists recent items
+- [x] Frontend README is enough for an agent to run the UI
 
 ## Out of scope
 

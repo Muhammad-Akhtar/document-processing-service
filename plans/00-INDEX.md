@@ -91,7 +91,7 @@ Do not introduce Kubernetes, OpenTelemetry, or S3 on day one.
 | 1 Backend foundation | Done | Upload/validate/storage/preview; converter stubs; TDD |
 | 2 HTML → PDF | Done | WeasyPrint converter, sync API, remote URL block; CI has native libs |
 | 3 PDF → HTML | Done | PyMuPDF flow layout, assets API, limitations doc |
-| 4 Frontend | Not started | |
+| 4 Frontend | Done | React+TS DocConvert UI; Vitest; Vite proxy |
 | 5 Database | Not started | |
 | 6 Celery / Redis | Not started | |
 | 7 Public service | Not started | |
@@ -107,4 +107,4 @@ Do not introduce Kubernetes, OpenTelemetry, or S3 on day one.
 
 ---
 
-**Next:** [05-phase-4-frontend.md](05-phase-4-frontend.md)
+**Next:** [06-phase-5-database.md](06-phase-5-database.md)
