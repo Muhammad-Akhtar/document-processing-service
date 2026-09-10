@@ -48,24 +48,41 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ## Tests
 
 ```powershell
-pytest
+pytest -q
 ```
 
-## Docker alternative
+On Windows without GTK/Pango, WeasyPrint **render** tests skip. To run the **full** suite (0 WeasyPrint skips), use Docker:
+
+```powershell
+# from repo root
+docker compose run --rm --build test
+```
+
+`WEASYPRINT_REQUIRED=1` is set in the test image and CI so a broken WeasyPrint install **fails** instead of skipping.
+
+## Docker (API + tests)
 
 From repo root:
 
 ```powershell
+# API (Phases 0–3 converters included) — http://127.0.0.1:8008
 docker compose up --build api
+
+# Full pytest inside Linux image (expect 0 WeasyPrint skips)
+docker compose run --rm --build test
 ```
+
+- Health: http://127.0.0.1:8008/health
+- Docs: http://127.0.0.1:8008/docs
+- Storage mounts to `./storage` on the host
 
 ## WeasyPrint on Windows (Phase 2)
 
 HTML → PDF needs GTK/Pango/Cairo. Options:
 
 1. Follow [WeasyPrint — Windows](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows) (often via MSYS2 / GTK3 runtime).
-2. Run conversion via Docker: `docker compose up --build api` (image installs Pango/Cairo).
-3. CI installs the same system packages on Ubuntu; local Windows without native libs will **skip** WeasyPrint render tests automatically.
+2. **Preferred for conversion parity:** Docker (`docker compose up --build api` / `docker compose run --rm test`).
+3. CI installs the same system packages on Ubuntu and also runs the Docker test image.
 
 ```powershell
 pip install -r requirements.txt -r requirements-dev.txt

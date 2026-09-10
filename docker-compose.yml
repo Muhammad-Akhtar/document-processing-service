@@ -1,8 +1,9 @@
 # Dual setup: day-to-day API debug uses backend/.venv + uvicorn.
-# Use this compose file for prod-like / integrated stack runs.
+# Use this compose file for Linux-parity runs (WeasyPrint works here).
 #
-#   Local API:   cd backend && .\.venv\Scripts\Activate.ps1 ; uvicorn app.main:app --reload
-#   Full stack:  docker compose up
+#   Local API:     cd backend && .\.venv\Scripts\Activate.ps1 ; uvicorn app.main:app --reload
+#   Docker API:    docker compose up --build api
+#   Docker tests:  docker compose run --rm test
 #
 # Postgres / Redis / worker are profile "full" until Phases 5–6.
 
@@ -11,15 +12,39 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: runtime
     ports:
-      - "8000:8000"
+      # Host 8008 avoids clashes with other local services on 8000.
+      - "8008:8000"
     volumes:
       - ./storage:/storage
-      - ./backend/app:/app/app
     environment:
       STORAGE_ROOT: /storage
       DEBUG: "true"
-    # command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      APP_NAME: document-processing-service
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # Full backend suite in Linux (WeasyPrint + PyMuPDF). Expect 0 skips for WeasyPrint.
+  test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: test
+    environment:
+      WEASYPRINT_REQUIRED: "1"
+      STORAGE_ROOT: /tmp/test-storage
+    # No host bind of Windows paths for tests — hermetic image contents.
 
   # --- Phase 5: enable with: docker compose --profile full up ---
   # postgres:
@@ -46,6 +71,7 @@ services:
   #   build:
   #     context: ./backend
   #     dockerfile: Dockerfile
+  #     target: runtime
   #   command: celery -A app.workers.celery_app worker --loglevel=info
   #   volumes:
   #     - ./storage:/storage

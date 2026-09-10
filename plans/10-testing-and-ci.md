@@ -31,20 +31,31 @@ pytest -q
 ruff check app tests
 ```
 
+For **full** WeasyPrint coverage on Windows hosts, run tests in Docker (Linux image with Pango/Cairo):
+
+```powershell
+# repo root
+docker compose run --rm --build test
+```
+
+In Docker/CI, `WEASYPRINT_REQUIRED=1` turns missing WeasyPrint into a **failure**, not a skip.
+
 ## CI (GitHub Actions)
 
 Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 
 - Triggers on **push** and **pull_request** to `master`
-- Installs backend deps, runs **ruff**, then **pytest**
+- Job `backend`: apt WeasyPrint libs + ruff + pytest (`WEASYPRINT_REQUIRED=1`)
+- Job `docker`: `docker compose run --rm --build test` (image target `test`)
 
-Phase 8 may extend CI (frontend build, Docker image, deploy). Do **not** wait until Phase 8 to keep the backend green — every phase push must pass this workflow.
+Phase 8 may extend CI (frontend build, deploy). Do **not** wait until Phase 8 to keep the backend green — every phase push must pass this workflow.
 
 ## Agent checklist before phase push
 
 - [ ] Features developed with **TDD** (tests first, then implementation)
 - [ ] New behavior has tests (happy + failure paths)
-- [ ] `pytest -q` passes in `backend/.venv`
+- [ ] `pytest -q` passes in `backend/.venv` (WeasyPrint may skip on Windows)
+- [ ] Prefer also: `docker compose run --rm --build test` with **0 WeasyPrint skips**
 - [ ] Plans / status tracker updated
 - [ ] Commit message names the completed phase
 - [ ] `git push origin master`

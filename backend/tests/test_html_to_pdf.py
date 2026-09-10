@@ -6,14 +6,14 @@ import pytest
 
 from app.converters.html_to_pdf import HtmlToPdfConverter, LocalOnlyUrlFetcher
 from app.core.exceptions import ConversionAppError, ValidationAppError
-from tests.weasyprint_utils import weasyprint_works
+from tests.weasyprint_utils import require_weasyprint
 
 FIXTURES = Path(__file__).parent / "fixtures" / "html_to_pdf"
 
-requires_weasyprint = pytest.mark.skipif(
-    not weasyprint_works(),
-    reason="WeasyPrint native libraries not available",
-)
+
+@pytest.fixture
+def weasyprint_ready() -> None:
+    require_weasyprint()
 
 
 def test_url_fetcher_allows_local_file(tmp_path: Path) -> None:
@@ -21,7 +21,7 @@ def test_url_fetcher_allows_local_file(tmp_path: Path) -> None:
     asset.write_text("hello", encoding="utf-8")
     fetcher = LocalOnlyUrlFetcher(tmp_path)
     result = fetcher(asset.resolve().as_uri())
-    assert result["string"] == b"hello"
+    assert result.read() == b"hello"
 
 
 def test_url_fetcher_blocks_http_strict() -> None:
@@ -34,8 +34,8 @@ def test_url_fetcher_blocks_http_strict() -> None:
 def test_url_fetcher_soft_blocks_http_with_placeholder() -> None:
     fetcher = LocalOnlyUrlFetcher(Path("."), strict_remote=False)
     result = fetcher("https://example.invalid/x.png")
-    assert result["mime_type"] == "image/png"
-    assert result["string"].startswith(b"\x89PNG")
+    body = result.read()
+    assert body.startswith(b"\x89PNG")
     assert fetcher.blocked_urls == ["https://example.invalid/x.png"]
 
 
@@ -50,7 +50,7 @@ def test_url_fetcher_blocks_path_escape(tmp_path: Path) -> None:
     assert exc.value.code == "asset_path_denied"
 
 
-@requires_weasyprint
+@pytest.mark.usefixtures("weasyprint_ready")
 def test_html_to_pdf_produces_non_empty_pdf(tmp_path: Path) -> None:
     work = tmp_path / "work"
     work.mkdir()

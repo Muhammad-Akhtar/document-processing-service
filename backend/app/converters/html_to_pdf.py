@@ -91,82 +91,101 @@ _PLACEHOLDER_PNG = bytes(
 )
 
 
-class LocalOnlyUrlFetcher:
-    """Allow file:// reads only under a document asset root; block remote URLs.
+def _url_fetcher_types():
+    """Lazy import so unit tests can import module without WeasyPrint native libs."""
+    from weasyprint.urls import URLFetcher, URLFetcherResponse
 
-    Remote http(s) URLs never hit the network. By default they are replaced with a
-    tiny placeholder image so conversion can continue; set ``strict_remote=True``
-    to raise instead. Host allowlisting can be added later.
-    """
+    return URLFetcher, URLFetcherResponse
 
-    def __init__(self, asset_root: Path, *, strict_remote: bool = False) -> None:
-        self._root = asset_root.resolve()
-        self.strict_remote = strict_remote
-        self.blocked_urls: list[str] = []
 
-    def __call__(self, url: str, timeout: int = 10, ssl_context=None) -> dict:
-        parsed = urlparse(url)
-        scheme = (parsed.scheme or "").lower()
+def build_local_only_url_fetcher(asset_root: Path, *, strict_remote: bool = False):
+    """Create a WeasyPrint 70+ URLFetcher limited to the document directory."""
+    URLFetcher, URLFetcherResponse = _url_fetcher_types()
 
-        if scheme == "data":
-            from weasyprint import default_url_fetcher
+    class LocalOnlyUrlFetcher(URLFetcher):
+        """Allow file/data URLs under asset_root; never fetch remote http(s)."""
 
-            return default_url_fetcher(url, timeout=timeout, ssl_context=ssl_context)
+        def __init__(self) -> None:
+            super().__init__(
+                allowed_protocols={"file", "data"},
+                allow_redirects=False,
+                fail_on_errors=False,
+            )
+            self._root = asset_root.resolve()
+            self.strict_remote = strict_remote
+            self.blocked_urls: list[str] = []
 
-        if scheme in {"http", "https", "ftp", "ftps"}:
-            self.blocked_urls.append(url)
-            logger.warning("Blocked remote asset URL during HTML→PDF: %s", url)
-            if self.strict_remote:
+        def fetch(self, url: str, headers=None):
+            parsed = urlparse(url)
+            scheme = (parsed.scheme or "").lower()
+
+            if scheme in {"http", "https", "ftp", "ftps"}:
+                self.blocked_urls.append(url)
+                logger.warning("Blocked remote asset URL during HTML→PDF: %s", url)
+                if self.strict_remote:
+                    raise ConversionAppError(
+                        "Remote URL fetching is disabled for HTML conversion",
+                        code="remote_url_blocked",
+                        details={"url": url},
+                    )
+                return URLFetcherResponse(
+                    url,
+                    _PLACEHOLDER_PNG,
+                    {"Content-Type": "image/png"},
+                    200,
+                )
+
+            if scheme == "data":
+                return super().fetch(url, headers)
+
+            if scheme != "file":
                 raise ConversionAppError(
-                    "Remote URL fetching is disabled for HTML conversion",
+                    f"URL scheme {scheme!r} is not allowed",
                     code="remote_url_blocked",
                     details={"url": url},
                 )
-            return {
-                "string": _PLACEHOLDER_PNG,
-                "mime_type": "image/png",
-                "encoding": None,
-                "redirected_url": url,
-            }
 
-        if scheme not in {"", "file"}:
-            raise ConversionAppError(
-                f"URL scheme {scheme!r} is not allowed",
-                code="remote_url_blocked",
-                details={"url": url},
+            path = _file_url_to_path(url)
+            try:
+                path.relative_to(self._root)
+            except ValueError as exc:
+                raise ConversionAppError(
+                    "Asset path is outside the document directory",
+                    code="asset_path_denied",
+                    details={"url": url},
+                ) from exc
+
+            if not path.is_file():
+                raise ConversionAppError(
+                    "Referenced asset was not found",
+                    code="asset_not_found",
+                    details={"url": url},
+                )
+
+            mime, _ = mimetypes.guess_type(str(path))
+            return URLFetcherResponse(
+                path.as_uri(),
+                path.read_bytes(),
+                {"Content-Type": mime or "application/octet-stream"},
+                200,
             )
 
-        path = self._file_url_to_path(url)
-        try:
-            path.relative_to(self._root)
-        except ValueError as exc:
-            raise ConversionAppError(
-                "Asset path is outside the document directory",
-                code="asset_path_denied",
-                details={"url": url},
-            ) from exc
+    return LocalOnlyUrlFetcher()
 
-        if not path.is_file():
-            raise ConversionAppError(
-                "Referenced asset was not found",
-                code="asset_not_found",
-                details={"url": url},
-            )
 
-        mime, _ = mimetypes.guess_type(str(path))
-        return {
-            "string": path.read_bytes(),
-            "mime_type": mime or "application/octet-stream",
-            "encoding": None,
-            "redirected_url": path.as_uri(),
-        }
+# Backwards-compatible name used by tests.
+class LocalOnlyUrlFetcher:
+    """Factory-style wrapper so tests can instantiate with (asset_root, ...)."""
 
-    @staticmethod
-    def _file_url_to_path(url: str) -> Path:
-        parsed = urlparse(url)
-        if parsed.scheme == "file":
-            return Path(url2pathname(unquote(parsed.path))).resolve()
-        return Path(unquote(parsed.path)).resolve()
+    def __new__(cls, asset_root: Path, *, strict_remote: bool = False):
+        return build_local_only_url_fetcher(asset_root, strict_remote=strict_remote)
+
+
+def _file_url_to_path(url: str) -> Path:
+    parsed = urlparse(url)
+    if parsed.scheme == "file":
+        return Path(url2pathname(unquote(parsed.path))).resolve()
+    return Path(unquote(parsed.path)).resolve()
 
 
 class HtmlToPdfConverter:
@@ -199,7 +218,7 @@ class HtmlToPdfConverter:
             ) from exc
 
         destination_path.parent.mkdir(parents=True, exist_ok=True)
-        fetcher = LocalOnlyUrlFetcher(asset_root)
+        fetcher = build_local_only_url_fetcher(asset_root)
         warnings: list[str] = []
 
         try:

@@ -14,6 +14,13 @@ Local backend debugging uses a **Python venv** (`backend/.venv`). Docker Compose
 
 Default branch is **`master`**. GitHub Actions runs on each push: [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
+### Docker (Phases 0–3)
+
+```powershell
+docker compose up --build api          # API on http://127.0.0.1:8008
+docker compose run --rm --build test   # full pytest in Linux (WeasyPrint included)
+```
+
 ## Status
 
 | Phase | Status |

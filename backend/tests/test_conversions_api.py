@@ -4,17 +4,17 @@ from pathlib import Path
 
 import pytest
 
-from tests.weasyprint_utils import weasyprint_works
+from tests.weasyprint_utils import require_weasyprint
 
 FIXTURES = Path(__file__).parent / "fixtures" / "html_to_pdf"
 
-requires_weasyprint = pytest.mark.skipif(
-    not weasyprint_works(),
-    reason="WeasyPrint native libraries not available",
-)
+
+@pytest.fixture
+def weasyprint_ready() -> None:
+    require_weasyprint()
 
 
-@requires_weasyprint
+@pytest.mark.usefixtures("weasyprint_ready")
 def test_convert_html_document_to_pdf_and_download(client) -> None:
     html = (FIXTURES / "sample.html").read_bytes()
     upload = client.post(
