@@ -12,7 +12,8 @@ Design notes for upload and conversion. Full enforcement lands in Phase 1+ and P
 ## Converters
 
 - **No arbitrary filesystem reads** — converters receive only files already stored under `storage/`, or in-memory bytes from validated uploads.
-- **HTML → PDF** — no SSRF: block remote URL fetches unless explicitly allowlisted later; no `file://` local URLs; no JavaScript execution (WeasyPrint does not run JS; keep it that way).
+- **HTML → PDF** — no SSRF: `LocalOnlyUrlFetcher` denies remote http(s)/ftp (placeholder image, no network). Only `file://` under the document asset root. No JS execution (WeasyPrint). Host allowlisting is a future opt-in.
+- **No filesystem escape** — asset paths must stay under the uploaded document directory; paths outside raise `asset_path_denied`.
 - **Sandboxed workers** — Phase 7: run conversion workers with least privilege / isolation.
 
 ## Deferred

@@ -11,6 +11,8 @@ class ConversionResult:
     output_path: Path | None = None
     warnings: list[str] = field(default_factory=list)
     error: str | None = None
+    page_count: int | None = None
+    title: str | None = None
 
 
 @runtime_checkable

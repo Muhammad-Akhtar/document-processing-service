@@ -89,7 +89,7 @@ Do not introduce Kubernetes, OpenTelemetry, or S3 on day one.
 | 0 Repo & dev env | Done | Skeleton, venv (3.13), health, Docker stubs, CI + test conventions |
 | Testing & CI baseline | Done | `ci.yml` on `master`; TDD required — see plan 10 |
 | 1 Backend foundation | Done | Upload/validate/storage/preview; converter stubs; TDD |
-| 2 HTML → PDF | Not started | |
+| 2 HTML → PDF | Done | WeasyPrint converter, sync API, remote URL block; CI has native libs |
 | 3 PDF → HTML | Not started | |
 | 4 Frontend | Not started | |
 | 5 Database | Not started | |
@@ -107,4 +107,4 @@ Do not introduce Kubernetes, OpenTelemetry, or S3 on day one.
 
 ---
 
-**Next:** [03-phase-2-html-to-pdf.md](03-phase-2-html-to-pdf.md)
+**Next:** [04-phase-3-pdf-to-html.md](04-phase-3-pdf-to-html.md)

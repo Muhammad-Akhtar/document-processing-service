@@ -35,6 +35,20 @@ class ValidationAppError(AppError):
         )
 
 
+class ConversionAppError(AppError):
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str = "conversion_error",
+        status_code: int = 400,
+        details: Any = None,
+    ) -> None:
+        super().__init__(
+            message, code=code, status_code=status_code, details=details
+        )
+
+
 class NotFoundAppError(AppError):
     def __init__(self, message: str = "Resource not found", *, details: Any = None) -> None:
         super().__init__(

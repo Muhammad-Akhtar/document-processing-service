@@ -63,10 +63,25 @@ docker compose up --build api
 
 HTML → PDF needs GTK/Pango/Cairo. Options:
 
-1. Follow [WeasyPrint — Windows](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows) (often via MSYS2).
-2. Run conversion tests inside Docker (image will gain system libs in Phase 2).
+1. Follow [WeasyPrint — Windows](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#windows) (often via MSYS2 / GTK3 runtime).
+2. Run conversion via Docker: `docker compose up --build api` (image installs Pango/Cairo).
+3. CI installs the same system packages on Ubuntu; local Windows without native libs will **skip** WeasyPrint render tests automatically.
 
-Until Phase 2, those packages stay commented in `requirements.txt`.
+```powershell
+pip install -r requirements.txt -r requirements-dev.txt
+pytest -q
+```
+
+## Conversions
+
+```http
+POST /api/v1/conversions
+{"source_document_id": "<uuid>", "target_format": "pdf"}
+```
+
+Then download via the returned `download_url` (`GET /api/v1/documents/{output_id}/download`).
+
+Remote `http(s)` assets in HTML are **blocked** (no SSRF); only files under the document directory are loaded.
 
 ## Security
 
@@ -93,4 +108,4 @@ backend/
 
 ## Next
 
-[Phase 1 — Backend foundation](../plans/02-phase-1-backend-foundation.md)
+[Phase 3 — PDF → HTML](../plans/04-phase-3-pdf-to-html.md)

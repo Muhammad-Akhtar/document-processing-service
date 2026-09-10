@@ -56,7 +56,7 @@ def test_registry_missing_raises() -> None:
         registry.get("html", "pdf")
 
 
-def test_default_registry_has_placeholders() -> None:
+def test_default_registry_has_converters() -> None:
     registry = get_default_registry()
     html = registry.get("html", "pdf")
     pdf = registry.get("pdf", "html")
@@ -64,11 +64,9 @@ def test_default_registry_has_placeholders() -> None:
     assert isinstance(pdf, PdfToHtmlConverter)
 
 
-def test_placeholder_converters_not_implemented(tmp_path: Path) -> None:
-    src = tmp_path / "a.html"
-    dst = tmp_path / "a.pdf"
-    src.write_text("<html></html>", encoding="utf-8")
-    with pytest.raises(NotImplementedError):
-        HtmlToPdfConverter().convert(src, dst)
+def test_pdf_to_html_placeholder_not_implemented(tmp_path: Path) -> None:
+    src = tmp_path / "a.pdf"
+    dst = tmp_path / "a.html"
+    src.write_bytes(b"%PDF-1.4\n")
     with pytest.raises(NotImplementedError):
         PdfToHtmlConverter().convert(src, dst)

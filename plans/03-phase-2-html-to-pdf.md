@@ -17,9 +17,12 @@ HTML → PDF is the **primary polished converter**. PDF → HTML (Phase 3) will 
 
 ## Prerequisites
 
-- [ ] Phase 1 upload/storage/converter interface done
-- [ ] Venv activated
-- [ ] WeasyPrint system dependencies available on the machine **or** use Docker for conversion tests (see Phase 0 Windows note)
+- [x] Phase 1 upload/storage/converter interface done
+- [x] Venv activated
+- [x] WeasyPrint system dependencies available on the machine **or** use Docker for conversion tests (see Phase 0 Windows note)
+  - Local Windows without GTK/Pango: render tests auto-skip; **CI + Docker** install native libs.
+
+**TDD:** tests first. **Push:** `git push origin master` after acceptance criteria pass.
 
 ---
 
@@ -27,66 +30,67 @@ HTML → PDF is the **primary polished converter**. PDF → HTML (Phase 3) will 
 
 ### Task 2.1 — Install WeasyPrint (+ HTML helpers)
 
-- [ ] Add to requirements: `weasyprint`, `beautifulsoup4`, `lxml`
-- [ ] `pip install` into `.venv`
-- [ ] Document Windows native lib setup in `backend/README.md`
-- [ ] Optional: extend Docker image with WeasyPrint OS packages for reliable CI
+- [x] Add to requirements: `weasyprint`, `beautifulsoup4`, `lxml`
+- [x] `pip install` into `.venv`
+- [x] Document Windows native lib setup in `backend/README.md`
+- [x] Optional: extend Docker image with WeasyPrint OS packages for reliable CI
 
 ### Task 2.2 — Implement `HTMLToPDFConverter`
 
 `app/converters/html_to_pdf.py`:
 
-- [ ] Implements `Converter` from Phase 1
-- [ ] `source_format="html"`, `target_format="pdf"`
-- [ ] Reads HTML file (and optional sibling assets directory)
-- [ ] Writes PDF under `storage/outputs/{job_or_doc_id}/...`
-- [ ] Register in converter registry
+- [x] Implements `Converter` from Phase 1
+- [x] `source_format="html"`, `target_format="pdf"`
+- [x] Reads HTML file (and optional sibling assets directory)
+- [x] Writes PDF under `storage/outputs/{job_or_doc_id}/...`
+- [x] Register in converter registry
 
 ### Task 2.3 — Inline CSS support
 
-- [ ] Ensure `<style>` blocks in HTML are honored (WeasyPrint default strength)
-- [ ] Support linked local CSS files that were uploaded/bundled with the document
-- [ ] Tests with fixture HTML containing inline CSS (colors, fonts, margins)
+- [x] Ensure `<style>` blocks in HTML are honored (WeasyPrint default strength)
+- [x] Support linked local CSS files that were uploaded/bundled with the document
+- [x] Tests with fixture HTML containing inline CSS (colors, fonts, margins)
 
 ### Task 2.4 — Images and fonts
 
-- [ ] Relative image paths resolve against document base URL/path (local only)
-- [ ] **Disable** fetching arbitrary remote URLs by default (SSRF / untrusted HTML — see security)
-- [ ] Document how to allowlist specific hosts later if needed
-- [ ] Basic `@font-face` / local font file support if feasible; otherwise document limitation
+- [x] Relative image paths resolve against document base URL/path (local only)
+- [x] **Disable** fetching arbitrary remote URLs by default (SSRF / untrusted HTML — see security)
+- [x] Document how to allowlist specific hosts later if needed
+- [x] Basic `@font-face` / local font file support if feasible; otherwise document limitation
+  - Local font files under the document directory work via `LocalOnlyUrlFetcher`; system fonts via WeasyPrint/OS.
 
 ### Task 2.5 — PDF metadata
 
-- [ ] Set title/author/creator where WeasyPrint API allows (from HTML `<title>` or request fields)
-- [ ] Store output metadata alongside file (size, page count if cheap to obtain)
+- [x] Set title/author/creator where WeasyPrint API allows (from HTML `<title>` or request fields)
+- [x] Store output metadata alongside file (size, page count if cheap to obtain)
 
 ### Task 2.6 — Conversion service + API (sync for now)
 
 Until Celery (Phase 6), sync conversion is OK **behind a service**:
 
-- [ ] `POST /api/v1/conversions` body: `{ "document_id": "...", "target_format": "pdf" }`
-- [ ] Service loads document, picks converter, runs `convert()`, stores output
-- [ ] Response includes `output_document_id` / download URL
-- [ ] Do **not** bury WeasyPrint calls inside the route function body
+- [x] `POST /api/v1/conversions` body: `{ "document_id": "...", "target_format": "pdf" }` (`source_document_id`)
+- [x] Service loads document, picks converter, runs `convert()`, stores output
+- [x] Response includes `output_document_id` / download URL
+- [x] Do **not** bury WeasyPrint calls inside the route function body
 
 ### Task 2.7 — Conversion errors
 
-- [ ] Map WeasyPrint failures to structured `ErrorResponse`
-- [ ] Distinguish validation errors (unsupported source) vs conversion engine errors
-- [ ] Log stack traces server-side; return safe messages to clients
+- [x] Map WeasyPrint failures to structured `ErrorResponse`
+- [x] Distinguish validation errors (unsupported source) vs conversion engine errors
+- [x] Log stack traces server-side; return safe messages to clients
 
 ### Task 2.8 — Download generated PDF
 
-- [ ] `GET /api/v1/documents/{output_id}/download` already from Phase 1 should cover outputs if stored as documents
-- [ ] Or dedicated `GET /api/v1/conversions/{id}/download`
-- [ ] Correct `Content-Type: application/pdf` and filename disposition
+- [x] `GET /api/v1/documents/{output_id}/download` already from Phase 1 should cover outputs if stored as documents
+- [x] Or dedicated `GET /api/v1/conversions/{id}/download`
+- [x] Correct `Content-Type: application/pdf` and filename disposition
 
 ### Task 2.9 — Tests & fixtures
 
-- [ ] `tests/fixtures/sample.html` with inline CSS + local image
-- [ ] Test successful conversion produces non-empty PDF
-- [ ] Test reject PDF→PDF via this converter
-- [ ] Test remote `http://` image URL blocked or ignored per policy
+- [x] `tests/fixtures/sample.html` with inline CSS + local image
+- [x] Test successful conversion produces non-empty PDF
+- [x] Test reject PDF→PDF via this converter
+- [x] Test remote `http://` image URL blocked or ignored per policy
 
 ---
 
@@ -94,20 +98,20 @@ Until Celery (Phase 6), sync conversion is OK **behind a service**:
 
 From [`../Initial_idea.md`](../Initial_idea.md):
 
-- [ ] No arbitrary external network fetches during render (default deny)
-- [ ] No access to server filesystem outside document asset root
-- [ ] No JavaScript execution during conversion
-- [ ] Size limits on HTML and embedded assets
+- [x] No arbitrary external network fetches during render (default deny)
+- [x] No access to server filesystem outside document asset root
+- [x] No JavaScript execution during conversion
+- [x] Size limits on HTML and embedded assets
 
 ---
 
 ## Acceptance criteria
 
-- [ ] `HTMLToPDFConverter` registered and unit-tested
-- [ ] End-to-end: upload HTML → convert → download PDF works in venv
-- [ ] Inline CSS visible in output PDF (spot-check)
-- [ ] Errors are structured; routes remain thin
-- [ ] Security defaults for untrusted HTML documented and enforced where possible
+- [x] `HTMLToPDFConverter` registered and unit-tested
+- [x] End-to-end: upload HTML → convert → download PDF works in venv
+- [x] Inline CSS visible in output PDF (spot-check)
+- [x] Errors are structured; routes remain thin
+- [x] Security defaults for untrusted HTML documented and enforced where possible
 
 ## Out of scope
 

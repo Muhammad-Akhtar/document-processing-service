@@ -3,9 +3,9 @@ uvicorn[standard]
 python-multipart
 pydantic
 pydantic-settings
+weasyprint
+beautifulsoup4
+lxml
 
-# converters added in Phase 2–3:
-# weasyprint
+# converters added in Phase 3:
 # pymupdf
-# beautifulsoup4
-# lxml

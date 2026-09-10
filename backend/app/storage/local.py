@@ -17,13 +17,23 @@ class LocalStorage:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._uploads = settings.uploads_dir
+        self._outputs = settings.outputs_dir
         self._uploads.mkdir(parents=True, exist_ok=True)
+        self._outputs.mkdir(parents=True, exist_ok=True)
 
-    def _doc_dir(self, document_id: UUID) -> Path:
-        return self._safe_join(self._uploads, str(document_id))
+    def _doc_dir(self, document_id: UUID, *, kind: str = "uploads") -> Path:
+        root = self._uploads if kind == "uploads" else self._outputs
+        return self._safe_join(root, str(document_id))
+
+    def _locate_doc_dir(self, document_id: UUID) -> Path:
+        for kind in ("uploads", "outputs"):
+            candidate = self._doc_dir(document_id, kind=kind)
+            if (candidate / "meta.json").is_file():
+                return candidate
+        raise NotFoundAppError(f"Document {document_id} not found")
 
     def _meta_path(self, document_id: UUID) -> Path:
-        return self._doc_dir(document_id) / "meta.json"
+        return self._locate_doc_dir(document_id) / "meta.json"
 
     def _safe_join(self, root: Path, *parts: str) -> Path:
         candidate = (root.joinpath(*parts)).resolve()
@@ -42,8 +52,47 @@ class LocalStorage:
         data: bytes,
         document_id: UUID | None = None,
     ) -> DocumentMeta:
+        return self._save(
+            kind="uploads",
+            filename=filename,
+            content_type=content_type,
+            data=data,
+            document_id=document_id,
+        )
+
+    def save_output(
+        self,
+        *,
+        filename: str,
+        content_type: str,
+        data: bytes,
+        document_id: UUID | None = None,
+        page_count: int | None = None,
+        title: str | None = None,
+    ) -> DocumentMeta:
+        return self._save(
+            kind="outputs",
+            filename=filename,
+            content_type=content_type,
+            data=data,
+            document_id=document_id,
+            page_count=page_count,
+            title=title,
+        )
+
+    def _save(
+        self,
+        *,
+        kind: str,
+        filename: str,
+        content_type: str,
+        data: bytes,
+        document_id: UUID | None = None,
+        page_count: int | None = None,
+        title: str | None = None,
+    ) -> DocumentMeta:
         doc_id = document_id or uuid4()
-        doc_dir = self._doc_dir(doc_id)
+        doc_dir = self._doc_dir(doc_id, kind=kind)
         doc_dir.mkdir(parents=True, exist_ok=False)
 
         file_path = self._safe_join(doc_dir, filename)
@@ -58,20 +107,24 @@ class LocalStorage:
             size=len(data),
             stored_path=relative,
             created_at=created_at,
+            page_count=page_count,
+            title=title,
         )
-        self._meta_path(doc_id).write_text(
+        (doc_dir / "meta.json").write_text(
             meta.model_dump_json(),
             encoding="utf-8",
         )
         return meta
 
     def exists(self, document_id: UUID) -> bool:
-        return self._meta_path(document_id).is_file()
+        try:
+            self._locate_doc_dir(document_id)
+            return True
+        except NotFoundAppError:
+            return False
 
     def get_meta(self, document_id: UUID) -> DocumentMeta:
         path = self._meta_path(document_id)
-        if not path.is_file():
-            raise NotFoundAppError(f"Document {document_id} not found")
         payload = json.loads(path.read_text(encoding="utf-8"))
         return DocumentMeta.model_validate(payload)
 
@@ -84,9 +137,8 @@ class LocalStorage:
         return path
 
     def delete(self, document_id: UUID) -> None:
-        if not self.exists(document_id):
-            raise NotFoundAppError(f"Document {document_id} not found")
-        shutil.rmtree(self._doc_dir(document_id))
+        doc_dir = self._locate_doc_dir(document_id)
+        shutil.rmtree(doc_dir)
 
     @staticmethod
     def _parse_document_id(document_id: UUID | str) -> UUID:

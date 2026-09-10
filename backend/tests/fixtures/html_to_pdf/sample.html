@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Phase 2 Sample</title>
+  <meta name="author" content="Document Processing Service" />
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 24px;
+      color: #113355;
+    }
+    h1 {
+      color: #c0392b;
+      border-bottom: 2px solid #c0392b;
+    }
+    .box {
+      background: #eaf6ff;
+      padding: 12px;
+      margin-top: 16px;
+    }
+  </style>
+  <link rel="stylesheet" href="extra.css" />
+</head>
+<body>
+  <h1>HTML to PDF sample</h1>
+  <p>Inline CSS should tint this heading red and body text navy.</p>
+  <div class="box">Linked local stylesheet styles this box.</div>
+  <p>
+    <img src="logo.png" alt="logo" width="32" height="32" />
+    Local image referenced relatively.
+  </p>
+  <!-- Remote fetch must be blocked by converter policy -->
+  <img src="https://example.invalid/remote.png" alt="remote-should-not-load" width="16" height="16" />
+</body>
+</html>

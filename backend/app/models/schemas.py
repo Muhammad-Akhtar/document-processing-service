@@ -22,6 +22,8 @@ class DocumentMeta(BaseModel):
     size: int = Field(ge=0)
     stored_path: str
     created_at: datetime
+    page_count: int | None = None
+    title: str | None = None
 
 
 class UploadResponse(BaseModel):
@@ -40,3 +42,16 @@ class ErrorResponse(BaseModel):
 class ConversionRequest(BaseModel):
     source_document_id: UUID
     target_format: str
+
+
+class ConversionResponse(BaseModel):
+    source_document_id: UUID
+    output_document_id: UUID
+    target_format: str
+    filename: str
+    content_type: str
+    size: int = Field(ge=0)
+    page_count: int | None = None
+    title: str | None = None
+    warnings: list[str] = Field(default_factory=list)
+    download_url: str
