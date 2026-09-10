@@ -55,7 +55,8 @@ document-processing-service/          # this monorepo (or sibling repos later)
 | 06 | [06-phase-5-database.md](06-phase-5-database.md) | Phase 5 | PostgreSQL, users/docs/jobs history |
 | 07 | [07-phase-6-celery-redis.md](07-phase-6-celery-redis.md) | Phase 6 | Async jobs, states, retries, progress |
 | 08 | [08-phase-7-public-service.md](08-phase-7-public-service.md) | Phase 7 | Auth, rate limits, quotas, S3 later, hardening |
-| 09 | [09-phase-8-scaling-observability.md](09-phase-8-scaling-observability.md) | Phase 8 | HA, monitoring, CI/CD, K8s later |
+| 09 | [09-phase-8-scaling-observability.md](09-phase-8-scaling-observability.md) | Phase 8 | HA, monitoring, extended CI/CD, K8s later |
+| 10 | [10-testing-and-ci.md](10-testing-and-ci.md) | Cross-cutting | Unit tests every phase; GitHub Actions CI; push to **`master`** after each phase |
 
 ## How agents should use these plans
 
@@ -65,6 +66,8 @@ document-processing-service/          # this monorepo (or sibling repos later)
 4. Do **not** skip security controls listed in Phase 0/7 when adding upload/conversion features.
 5. Prefer implementing **converter plugins** behind a shared `Converter` interface (see Phase 1–2).
 6. Keep conversion **out of FastAPI route bodies** once Phase 6 lands; until then sync conversion is OK behind a service layer.
+7. Add **unit/API tests for every new case** in the phase; keep [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) green. See [10-testing-and-ci.md](10-testing-and-ci.md).
+8. After each phase completes: commit and **`git push origin master`**.
 
 ## Progressive build rule
 
@@ -83,7 +86,8 @@ Do not introduce Kubernetes, OpenTelemetry, or S3 on day one.
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| 0 Repo & dev env | Done | Skeleton, venv (3.13), health, Docker stubs |
+| 0 Repo & dev env | Done | Skeleton, venv (3.13), health, Docker stubs, CI + test conventions |
+| Testing & CI baseline | Done | `ci.yml` on `master`; see plan 10 |
 | 1 Backend foundation | Not started | |
 | 2 HTML → PDF | Not started | |
 | 3 PDF → HTML | Not started | |
@@ -98,7 +102,9 @@ Do not introduce Kubernetes, OpenTelemetry, or S3 on day one.
 - Architecture diagram & stack: [`../Initial_idea.md`](../Initial_idea.md) (sections: recommended stack, architecture, security)
 - Converter plugin layout: `backend/app/converters/` (`base.py`, `html_to_pdf.py`, `pdf_to_html.py`, …)
 - Local files first; S3 deferred: Phase 7 and `Initial_idea.md` note near the end
+- Tests & CI: [10-testing-and-ci.md](10-testing-and-ci.md) — required from Phase 0 onward
+- Default git branch: **`master`**
 
 ---
 
-**Next:** [01-phase-0-repo-and-dev-env.md](01-phase-0-repo-and-dev-env.md)
+**Next:** [02-phase-1-backend-foundation.md](02-phase-1-backend-foundation.md)

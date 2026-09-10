@@ -8,14 +8,18 @@ Pluggable document-processing platform (HTML ↔ PDF first), evolving toward a p
 |-----|---------|
 | [`Initial_idea.md`](Initial_idea.md) | Product vision, stack, architecture |
 | [`plans/00-INDEX.md`](plans/00-INDEX.md) | **Start here for step-by-step implementation** |
+| [`plans/10-testing-and-ci.md`](plans/10-testing-and-ci.md) | Unit tests every phase; CI; push to `master` |
 
 Local backend debugging uses a **Python venv** (`backend/.venv`). Docker Compose is for Postgres/Redis/workers and prod-like runs. Details: [`plans/01-phase-0-repo-and-dev-env.md`](plans/01-phase-0-repo-and-dev-env.md).
+
+Default branch is **`master`**. GitHub Actions runs on each push: [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## Status
 
 | Phase | Status |
 |-------|--------|
 | 0 Repo & dev env | Done |
+| Testing & CI baseline | Done |
 | 1+ | Follow [`plans/00-INDEX.md`](plans/00-INDEX.md) |
 
 ### Quick start (backend)

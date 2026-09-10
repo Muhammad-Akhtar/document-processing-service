@@ -21,8 +21,11 @@ Routes must stay thin. Conversion lives under `app/converters/`.
 
 ## Prerequisites
 
-- [ ] Phase 0 complete (venv, skeleton, `/health`)
+- [x] Phase 0 complete (venv, skeleton, `/health`)
+- [x] Testing & CI baseline: [10-testing-and-ci.md](10-testing-and-ci.md)
 - [ ] Venv activated: `backend\.venv\Scripts\Activate.ps1`
+
+**Push rule:** when Phase 1 acceptance criteria pass, commit and `git push origin master` (CI must stay green).
 
 ---
 
