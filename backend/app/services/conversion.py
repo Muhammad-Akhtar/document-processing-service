@@ -52,16 +52,17 @@ class ConversionService:
                     result.error or "Conversion failed",
                     code="conversion_failed",
                 )
-            pdf_bytes = result.output_path.read_bytes()
-
-        out_name = _output_filename(source_meta.original_filename, target)
-        output_meta = self._storage.save_output(
-            filename=out_name,
-            content_type=_content_type_for(target),
-            data=pdf_bytes,
-            page_count=result.page_count,
-            title=result.title,
-        )
+            output_bytes = result.output_path.read_bytes()
+            assets_dir = result.output_path.parent / "assets"
+            out_name = _output_filename(source_meta.original_filename, target)
+            output_meta = self._storage.save_output(
+                filename=out_name,
+                content_type=_content_type_for(target),
+                data=output_bytes,
+                page_count=result.page_count,
+                title=result.title,
+                assets_dir=assets_dir if assets_dir.is_dir() else None,
+            )
 
         logger.info(
             "Converted %s (%s→%s) to %s pages=%s",

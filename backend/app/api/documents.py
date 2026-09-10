@@ -13,7 +13,7 @@ from app.storage.local import LocalStorage
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
 
 # Preview strategy A (default): return original bytes for browser built-in viewers.
-# Strategy B (PNG first-page render via PyMuPDF) deferred to Phase 3.
+# Optional first-page PNG rendering remains available as a future enhancement.
 PREVIEW_STRATEGY = "original_bytes"
 
 
@@ -87,7 +87,8 @@ def download_document(
     summary="Preview document (original bytes; browser PDF/HTML viewers)",
     description=(
         "Default preview strategy: return original file bytes "
-        f"(`{PREVIEW_STRATEGY}`). PNG first-page rendering is deferred to Phase 3."
+        f"(`{PREVIEW_STRATEGY}`). HTML previews may load sibling "
+        "`/assets/{{name}}` for extracted images."
     ),
 )
 def preview_document(
@@ -99,7 +100,7 @@ def preview_document(
     headers = {
         "Content-Security-Policy": (
             "default-src 'none'; img-src 'self' data:; "
-            "style-src 'unsafe-inline'; sandbox"
+            "style-src 'unsafe-inline'; sandbox allow-same-origin"
         ),
         "X-Content-Type-Options": "nosniff",
     }
@@ -108,6 +109,19 @@ def preview_document(
         media_type=meta.content_type,
         headers=headers,
     )
+
+
+@router.get(
+    "/{document_id}/assets/{asset_name}",
+    summary="Fetch an asset belonging to a document (e.g. PDF→HTML images)",
+)
+def get_document_asset(
+    document_id: UUID,
+    asset_name: str,
+    storage: LocalStorage = Depends(get_storage),
+) -> FileResponse:
+    path = storage.get_asset_path(document_id, asset_name)
+    return FileResponse(path)
 
 
 @router.delete(

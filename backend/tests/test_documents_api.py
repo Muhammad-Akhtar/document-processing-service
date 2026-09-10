@@ -42,10 +42,10 @@ def test_upload_rejects_bad_extension(client) -> None:
 
 
 def test_upload_rejects_oversized(client) -> None:
-    # conftest max_upload_bytes = 1024
+    # conftest max_upload_bytes = 256 KiB
     response = client.post(
         "/api/v1/documents",
-        files={"file": ("big.html", b"a" * 1025, "text/html")},
+        files={"file": ("big.html", b"a" * (256 * 1024 + 1), "text/html")},
     )
     assert response.status_code == 413
     assert response.json()["code"] == "file_too_large"

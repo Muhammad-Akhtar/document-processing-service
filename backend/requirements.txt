@@ -6,6 +6,4 @@ pydantic-settings
 weasyprint
 beautifulsoup4
 lxml
-
-# converters added in Phase 3:
-# pymupdf
+pymupdf

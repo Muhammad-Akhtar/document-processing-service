@@ -1,6 +1,7 @@
 [lint]
 # FastAPI uses Depends()/File() in defaults by design.
-ignore = ["B008"]
+# Converter engines raise varied exception types; catch-all is intentional.
+ignore = ["B008", "BLE001"]
 
 [lint.per-file-ignores]
 "tests/*" = ["S101"]

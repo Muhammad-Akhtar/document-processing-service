@@ -13,5 +13,5 @@ def weasyprint_works() -> bool:
 
         pdf = HTML(string="<html><body>ok</body></html>").write_pdf()
         return bool(pdf) and pdf.startswith(b"%PDF")
-    except Exception:  # noqa: BLE001 — native lib failures vary widely
+    except Exception:
         return False

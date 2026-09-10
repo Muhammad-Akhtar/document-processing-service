@@ -83,6 +83,16 @@ Then download via the returned `download_url` (`GET /api/v1/documents/{output_id
 
 Remote `http(s)` assets in HTML are **blocked** (no SSRF); only files under the document directory are loaded.
 
+## PDF → HTML (Phase 3)
+
+```http
+POST /api/v1/conversions
+{"source_document_id": "<uuid>", "target_format": "html"}
+```
+
+Best-effort **flow layout** via PyMuPDF. Images land under `assets/` and are served at  
+`GET /api/v1/documents/{id}/assets/{name}`. Limitations: [`docs/pdf-to-html-limitations.md`](docs/pdf-to-html-limitations.md).
+
 ## Security
 
 Baseline checklist: [`../docs/SECURITY.md`](../docs/SECURITY.md).
@@ -108,4 +118,4 @@ backend/
 
 ## Next
 
-[Phase 3 — PDF → HTML](../plans/04-phase-3-pdf-to-html.md)
+[Phase 4 — Frontend](../plans/05-phase-4-frontend.md)

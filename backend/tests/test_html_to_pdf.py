@@ -75,13 +75,3 @@ def test_html_to_pdf_rejects_non_html_source(tmp_path: Path) -> None:
     with pytest.raises(ValidationAppError) as exc:
         HtmlToPdfConverter().convert(src, dst)
     assert exc.value.code == "unsupported_source"
-
-
-def test_pdf_to_html_still_not_implemented(tmp_path: Path) -> None:
-    from app.converters.pdf_to_html import PdfToHtmlConverter
-
-    src = tmp_path / "a.pdf"
-    dst = tmp_path / "a.html"
-    src.write_bytes(b"%PDF-1.4\n")
-    with pytest.raises(NotImplementedError):
-        PdfToHtmlConverter().convert(src, dst)

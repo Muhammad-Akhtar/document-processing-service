@@ -69,6 +69,7 @@ class LocalStorage:
         document_id: UUID | None = None,
         page_count: int | None = None,
         title: str | None = None,
+        assets_dir: Path | None = None,
     ) -> DocumentMeta:
         return self._save(
             kind="outputs",
@@ -78,6 +79,7 @@ class LocalStorage:
             document_id=document_id,
             page_count=page_count,
             title=title,
+            assets_dir=assets_dir,
         )
 
     def _save(
@@ -90,6 +92,7 @@ class LocalStorage:
         document_id: UUID | None = None,
         page_count: int | None = None,
         title: str | None = None,
+        assets_dir: Path | None = None,
     ) -> DocumentMeta:
         doc_id = document_id or uuid4()
         doc_dir = self._doc_dir(doc_id, kind=kind)
@@ -97,6 +100,10 @@ class LocalStorage:
 
         file_path = self._safe_join(doc_dir, filename)
         file_path.write_bytes(data)
+
+        if assets_dir is not None and assets_dir.is_dir() and any(assets_dir.iterdir()):
+            dest_assets = doc_dir / "assets"
+            shutil.copytree(assets_dir, dest_assets)
 
         created_at = datetime.now(UTC)
         relative = file_path.relative_to(self._settings.storage_root.resolve()).as_posix()
@@ -134,6 +141,25 @@ class LocalStorage:
         path = self._safe_join(self._settings.storage_root, *meta.stored_path.split("/"))
         if not path.is_file():
             raise NotFoundAppError(f"Document file for {doc_id} not found")
+        return path
+
+    def get_asset_path(self, document_id: UUID, asset_name: str) -> Path:
+        if (
+            not asset_name
+            or asset_name != Path(asset_name).name
+            or "/" in asset_name
+            or "\\" in asset_name
+            or asset_name in {".", ".."}
+        ):
+            raise StorageAppError("Invalid asset name")
+
+        doc_dir = self._locate_doc_dir(document_id)
+        assets_root = doc_dir / "assets"
+        if not assets_root.is_dir():
+            raise NotFoundAppError(f"No assets for document {document_id}")
+        path = self._safe_join(assets_root, asset_name)
+        if not path.is_file():
+            raise NotFoundAppError(f"Asset {asset_name!r} not found")
         return path
 
     def delete(self, document_id: UUID) -> None:

@@ -23,7 +23,7 @@ def storage_root(tmp_path: Path) -> Path:
 def test_settings(storage_root: Path) -> Settings:
     return Settings(
         storage_root=storage_root,
-        max_upload_bytes=1024,
+        max_upload_bytes=256 * 1024,
         debug=True,
         cors_origins="http://testclient.local",
         _env_file=None,  # type: ignore[call-arg]

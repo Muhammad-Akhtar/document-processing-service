@@ -62,11 +62,3 @@ def test_default_registry_has_converters() -> None:
     pdf = registry.get("pdf", "html")
     assert isinstance(html, HtmlToPdfConverter)
     assert isinstance(pdf, PdfToHtmlConverter)
-
-
-def test_pdf_to_html_placeholder_not_implemented(tmp_path: Path) -> None:
-    src = tmp_path / "a.pdf"
-    dst = tmp_path / "a.html"
-    src.write_bytes(b"%PDF-1.4\n")
-    with pytest.raises(NotImplementedError):
-        PdfToHtmlConverter().convert(src, dst)
