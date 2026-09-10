@@ -1,0 +1,59 @@
+# Dual setup: day-to-day API debug uses backend/.venv + uvicorn.
+# Use this compose file for prod-like / integrated stack runs.
+#
+#   Local API:   cd backend && .\.venv\Scripts\Activate.ps1 ; uvicorn app.main:app --reload
+#   Full stack:  docker compose up
+#
+# Postgres / Redis / worker are profile "full" until Phases 5–6.
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/storage
+      - ./backend/app:/app/app
+    environment:
+      STORAGE_ROOT: /storage
+      DEBUG: "true"
+    # command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # --- Phase 5: enable with: docker compose --profile full up ---
+  # postgres:
+  #   profiles: ["full"]
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_USER: docs
+  #     POSTGRES_PASSWORD: docs
+  #     POSTGRES_DB: documents
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+
+  # --- Phase 6 ---
+  # redis:
+  #   profiles: ["full"]
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+
+  # worker:
+  #   profiles: ["full"]
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   command: celery -A app.workers.celery_app worker --loglevel=info
+  #   volumes:
+  #     - ./storage:/storage
+  #   environment:
+  #     STORAGE_ROOT: /storage
+  #     REDIS_URL: redis://redis:6379/0
+  #   depends_on:
+  #     - redis
+
+# volumes:
+#   pgdata:

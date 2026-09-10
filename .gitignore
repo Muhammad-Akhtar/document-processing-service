@@ -1,0 +1,40 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Env / secrets
+.env
+.env.local
+*.pem
+
+# Node / frontend (Phase 4+)
+node_modules/
+dist/
+build/
+.vite/
+
+# Local document storage (keep directory structure via .gitkeep)
+storage/uploads/*
+storage/outputs/*
+storage/previews/*
+!storage/**/.gitkeep
+
+# Generated documents (allow fixtures later)
+*.pdf
+!tests/fixtures/**
+!**/tests/fixtures/**
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
