@@ -1,26 +1,31 @@
-# PDF → HTML limitations (v1)
+# PDF → HTML limitations (v2)
 
-This converter is **best-effort**, not a perfect visual replica of the PDF.
+This converter is **layout-aware and best-effort**, not a perfect semantic reconstruction of the original document.
 
-## What v1 does
+## What v2 does
 
-- Extracts text via PyMuPDF (`page.get_text("dict")`) in approximate reading order
-- Builds **flow layout** HTML (`<section data-page>`, `<p>`, optional `<h2>` by font size)
-- Extracts embedded images into `assets/` next to the HTML when possible
+- Extracts structured text via PyMuPDF (`page.get_text("dict")`) — blocks → lines → **spans**
+- Builds **absolute visual layout** HTML:
+  - Page containers sized from `page.rect` (`width`/`height` in pt)
+  - Each span positioned with `left`/`top` from its bounding box
+  - Font size, approximate font family, and text color preserved in CSS
+  - Bold / italic inferred from font name and span flags (`<strong>` / `<em>`)
+- Maps URI annotations via `page.get_links()` onto overlapping spans as `<a href="...">` (http/https only)
+- Extracts embedded images into `assets/` and positions them when bbox data is available
 - Surfaces encrypted / unreadable PDFs as structured errors
 
-## What v1 does not do
+## What v2 does not do
 
-- Perfect table reconstruction
-- Absolute/visual positioning matching the PDF canvas
+- Perfect **semantic** table / list reconstruction (two-column text may *look* aligned but is not a `<table>`)
 - OCR for scanned (image-only) pages
-- Form fields, annotations, or JavaScript
-- Exact fonts / kerning / multi-column layouts
+- Form fields, annotations other than URI links, or JavaScript
+- Exact embedded font files / perfect kerning
+- Vector drawings, lines, or underlines as SVG
 - Password-protected PDFs (no password API yet)
 
 ## Round-trip note
 
-`HTML → PDF → HTML` will lose styling and structure. Prefer HTML→PDF as the polished path; treat PDF→HTML as extraction/preview aid.
+`HTML → PDF → HTML` will still lose original semantic structure. Prefer HTML→PDF as the polished authoring path; treat PDF→HTML as visual extraction / preview aid.
 
 ## Preview & assets
 

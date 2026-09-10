@@ -22,7 +22,17 @@ Copy-Item .env.example .env
 
 ## Run
 
-Dual terminals:
+### Docker (full stack — recommended on Windows)
+
+From the **repo root** (WeasyPrint works inside the Linux API image):
+
+```powershell
+docker compose up --build
+```
+
+UI: http://127.0.0.1:5173 — nginx serves the built app and proxies `/api` to the `api` service.
+
+### Local Vite (dual terminals)
 
 ```powershell
 # terminal 1 — backend (venv)
@@ -39,13 +49,17 @@ Open http://127.0.0.1:5173
 
 Vite proxies `/api` and `/health` to `VITE_PROXY_TARGET` (default `http://127.0.0.1:8000`).
 
-For Docker API on host port **8008**:
+### Hybrid (Docker API + local Vite)
 
 ```powershell
+# terminal 1 — from repo root
+docker compose up --build api
+
+# terminal 2
+cd frontend
 $env:VITE_PROXY_TARGET="http://127.0.0.1:8008"
 npm run dev
 ```
-
 ## Scripts
 
 | Command | Purpose |

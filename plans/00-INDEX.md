@@ -90,7 +90,7 @@ Do not introduce Kubernetes, OpenTelemetry, or S3 on day one.
 | Testing & CI baseline | Done | `ci.yml` on `master`; TDD required — see plan 10 |
 | 1 Backend foundation | Done | Upload/validate/storage/preview; converter stubs; TDD |
 | 2 HTML → PDF | Done | WeasyPrint converter, sync API, remote URL block; CI has native libs |
-| 3 PDF → HTML | Done | PyMuPDF flow layout, assets API, limitations doc |
+| 3 PDF → HTML | Done | PyMuPDF layout-aware v2 (absolute spans, fonts, links, images) |
 | 4 Frontend | Done | React+TS DocConvert UI; Vitest; Vite proxy |
 | 5 Database | Not started | |
 | 6 Celery / Redis | Not started | |

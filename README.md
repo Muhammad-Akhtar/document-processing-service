@@ -14,13 +14,6 @@ Local backend debugging uses a **Python venv** (`backend/.venv`). Docker Compose
 
 Default branch is **`master`**. GitHub Actions runs on each push: [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
-### Docker (Phases 0–3)
-
-```powershell
-docker compose up --build api          # API on http://127.0.0.1:8008
-docker compose run --rm --build test   # full pytest in Linux (WeasyPrint included)
-```
-
 ## Status
 
 | Phase | Status |
@@ -33,7 +26,41 @@ docker compose run --rm --build test   # full pytest in Linux (WeasyPrint includ
 | 4 Frontend | Done |
 | 5+ | Follow [`plans/00-INDEX.md`](plans/00-INDEX.md) |
 
-### Quick start (backend)
+## Quick start (Docker — recommended on Windows)
+
+WeasyPrint needs Linux system libraries. On Windows, run **both** API and UI in Docker so HTML → PDF works without installing GTK.
+
+From the repo root (Docker Desktop running):
+
+```powershell
+docker compose up --build
+```
+
+| Service | URL |
+|---------|-----|
+| UI (DocConvert) | http://127.0.0.1:5173 |
+| API (direct) | http://127.0.0.1:8008 |
+| API health | http://127.0.0.1:8008/health |
+| OpenAPI docs | http://127.0.0.1:8008/docs |
+
+The UI nginx proxies `/api` and `/health` to the `api` container, so use the **UI URL** for manual testing (upload → preview → convert → download).
+
+Useful variants:
+
+```powershell
+docker compose up --build api          # API only on :8008
+docker compose up --build api web      # same as default full stack
+docker compose run --rm --build test   # full pytest in Linux (WeasyPrint included)
+docker compose down                    # stop containers
+```
+
+Storage files land in `./storage` on the host.
+
+## Quick start (local — venv + npm)
+
+Use this for day-to-day code changes. On Windows, HTML → PDF may fail or skip without WeasyPrint native libs; use Docker for that path.
+
+### Backend
 
 ```powershell
 cd backend
@@ -45,7 +72,7 @@ uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
 Health: http://127.0.0.1:8000/health — details in [`backend/README.md`](backend/README.md).
 
-### Quick start (frontend)
+### Frontend
 
 ```powershell
 cd frontend
@@ -54,3 +81,19 @@ npm run dev
 ```
 
 UI: http://127.0.0.1:5173 — details in [`frontend/README.md`](frontend/README.md).
+
+### Hybrid (Docker API + local Vite)
+
+Good when iterating on the UI but still need WeasyPrint:
+
+```powershell
+# terminal 1 — from repo root
+docker compose up --build api
+
+# terminal 2 — frontend
+cd frontend
+$env:VITE_PROXY_TARGET="http://127.0.0.1:8008"
+npm run dev
+```
+
+Open http://127.0.0.1:5173 (Vite proxies `/api` to the Docker API on **8008**).

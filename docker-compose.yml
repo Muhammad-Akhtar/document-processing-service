@@ -1,9 +1,10 @@
 # Dual setup: day-to-day API debug uses backend/.venv + uvicorn.
 # Use this compose file for Linux-parity runs (WeasyPrint works here).
 #
-#   Local API:     cd backend && .\.venv\Scripts\Activate.ps1 ; uvicorn app.main:app --reload
-#   Docker API:    docker compose up --build api
+#   Full stack:    docker compose up --build          # UI :5173, API :8008
+#   API only:      docker compose up --build api
 #   Docker tests:  docker compose run --rm test
+#   Local API:     cd backend && .\.venv\Scripts\Activate.ps1 ; uvicorn app.main:app --reload
 #
 # Postgres / Redis / worker are profile "full" until Phases 5–6.
 
@@ -34,6 +35,18 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  # Phase 4 UI — nginx serves the Vite build and proxies /api to `api`.
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: runtime
+    ports:
+      - "5173:80"
+    depends_on:
+      api:
+        condition: service_healthy
 
   # Full backend suite in Linux (WeasyPrint + PyMuPDF). Expect 0 skips for WeasyPrint.
   test:

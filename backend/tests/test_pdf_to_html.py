@@ -1,4 +1,4 @@
-"""TDD: PDF → HTML converter (PyMuPDF, flow layout)."""
+"""TDD: PDF → HTML converter (PyMuPDF, layout-aware v2)."""
 
 from pathlib import Path
 
@@ -8,6 +8,8 @@ import pytest
 from app.converters.pdf_to_html import PdfToHtmlConverter
 from app.converters.registry import get_default_registry
 from app.core.exceptions import ConversionAppError, ValidationAppError
+
+_SAMPLE_PDF = Path(__file__).parent / "fixtures" / "pdf_to_html" / "sample.pdf"
 
 
 def _write_simple_pdf(path: Path, text: str = "Hello Phase 3 PDF") -> None:
@@ -38,6 +40,35 @@ def _write_pdf_with_image(path: Path, png_bytes: Path) -> None:
     doc.close()
 
 
+def _write_styled_pdf(path: Path) -> None:
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    page.insert_text((40, 80), "Bold Title", fontsize=18, fontname="helv")
+    # helv is regular; use bold/italic fonts for style detection
+    page.insert_text((40, 120), "Bold Word", fontsize=12, fontname="hebo")
+    page.insert_text((40, 150), "Italic Word", fontsize=11, fontname="heit")
+    page.insert_text((40, 180), "Plain Word", fontsize=9.5, fontname="helv")
+    doc.save(path)
+    doc.close()
+
+
+def _write_linked_pdf(path: Path) -> None:
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    page.insert_text((40, 100), "LinkedIn", fontsize=12, fontname="helv")
+    # Link rect roughly covering the text (PDF y grows downward from top in PyMuPDF)
+    rect = fitz.Rect(40, 88, 100, 108)
+    page.insert_link(
+        {
+            "kind": fitz.LINK_URI,
+            "from": rect,
+            "uri": "https://example.com/profile",
+        }
+    )
+    doc.save(path)
+    doc.close()
+
+
 @pytest.fixture
 def simple_pdf(tmp_path: Path) -> Path:
     path = tmp_path / "simple.pdf"
@@ -57,6 +88,7 @@ def test_pdf_to_html_contains_known_text(simple_pdf: Path, tmp_path: Path) -> No
     html = dst.read_text(encoding="utf-8")
     assert "Hello Phase 3 PDF" in html
     assert 'data-page="1"' in html
+    assert "position:absolute" in html
     assert result.page_count == 1
 
 
@@ -85,6 +117,50 @@ def test_pdf_to_html_extracts_image(tmp_path: Path) -> None:
     assert any(assets.iterdir())
     assert "assets/" in html
     assert result.warnings is not None
+
+
+def test_pdf_to_html_preserves_font_size_and_styles(tmp_path: Path) -> None:
+    src = tmp_path / "styled.pdf"
+    _write_styled_pdf(src)
+    dst = tmp_path / "out.html"
+    PdfToHtmlConverter().convert(src, dst)
+    html = dst.read_text(encoding="utf-8")
+    assert "font-size:18pt" in html or "font-size:18.0pt" in html
+    assert "9.5pt" in html
+    assert "<strong>" in html
+    assert "<em>" in html
+    assert "position:absolute" in html
+    assert "left:" in html and "top:" in html
+
+
+def test_pdf_to_html_preserves_hyperlinks(tmp_path: Path) -> None:
+    src = tmp_path / "linked.pdf"
+    _write_linked_pdf(src)
+    dst = tmp_path / "out.html"
+    PdfToHtmlConverter().convert(src, dst)
+    html = dst.read_text(encoding="utf-8")
+    assert 'href="https://example.com/profile"' in html
+    assert "<a " in html
+    assert "LinkedIn" in html
+
+
+def test_pdf_to_html_sample_fixture_layout(tmp_path: Path) -> None:
+    assert _SAMPLE_PDF.is_file(), "sample.pdf fixture missing"
+    dst = tmp_path / "sample_out.html"
+    result = PdfToHtmlConverter().convert(_SAMPLE_PDF, dst)
+    html = dst.read_text(encoding="utf-8")
+    assert result.success is True
+    assert result.page_count == 2
+    assert "MUHAMMAD AKHTAR" in html
+    assert "PROFESSIONAL SUMMARY" in html
+    assert 'href="https://linkedin.com/in/muhammad-akhtar-web-developer"' in html
+    assert "muhammad-akhtar-folio.lovable.app" in html
+    assert "612pt" in html and "792pt" in html
+    assert "position:absolute" in html
+    assert "18pt" in html
+    assert "9.5pt" in html
+    assert 'data-page="1"' in html
+    assert 'data-page="2"' in html
 
 
 def test_pdf_to_html_rejects_non_pdf(tmp_path: Path) -> None:

@@ -107,8 +107,8 @@ POST /api/v1/conversions
 {"source_document_id": "<uuid>", "target_format": "html"}
 ```
 
-Best-effort **flow layout** via PyMuPDF. Images land under `assets/` and are served at  
-`GET /api/v1/documents/{id}/assets/{name}`. Limitations: [`docs/pdf-to-html-limitations.md`](docs/pdf-to-html-limitations.md).
+Best-effort **layout-aware (v2)** HTML via PyMuPDF: absolute page positioning, span fonts/styles, URI links, and images under `assets/`  
+(`GET /api/v1/documents/{id}/assets/{name}`). Limitations: [`docs/pdf-to-html-limitations.md`](docs/pdf-to-html-limitations.md).
 
 ## Security
 
