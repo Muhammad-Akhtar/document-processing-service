@@ -1,0 +1,6 @@
+[lint]
+# FastAPI uses Depends()/File() in defaults by design.
+ignore = ["B008"]
+
+[lint.per-file-ignores]
+"tests/*" = ["S101"]

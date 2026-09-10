@@ -25,8 +25,18 @@ class Settings(BaseSettings):
 
     storage_root: Path = Field(default=_REPO_ROOT / "storage")
     max_upload_bytes: int = 10 * 1024 * 1024  # 10 MiB
+    allowed_extensions: str = ".html,.htm,.pdf"
+    allowed_mime_types: str = "text/html,application/pdf,application/xhtml+xml,text/plain"
 
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+
+    @property
+    def allowed_extension_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.allowed_extensions.split(",") if e.strip()]
+
+    @property
+    def allowed_mime_type_list(self) -> list[str]:
+        return [m.strip().lower() for m in self.allowed_mime_types.split(",") if m.strip()]
 
     @property
     def cors_origin_list(self) -> list[str]:

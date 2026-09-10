@@ -9,14 +9,20 @@
 - Remote: `https://github.com/Muhammad-Akhtar/document-processing-service.git`
 - After **each phase** is complete and acceptance criteria pass: commit, then **push to `master`**
 
-## Unit / API tests (required every phase)
+## Test-driven development (required every phase)
 
-For each feature or endpoint added in a phase:
+Work **red → green → refactor**:
 
-1. Add tests under `backend/tests/` (and later `frontend/` test dirs).
-2. Cover happy path **and** failure cases called out in that phase (validation errors, 404, oversized upload, etc.).
-3. Prefer fast unit tests for services/validators; use FastAPI `TestClient` / `httpx` for API routes.
-4. Run locally before push:
+1. Write failing unit/API tests for the behavior in the current task.
+2. Implement the minimum code to make those tests pass.
+3. Refactor while keeping tests green.
+4. Do **not** merge/push a phase with features that lack tests written first (or in the same commit cycle as the feature).
+
+Cover happy paths **and** failure cases (validation errors, 404, oversized upload, path traversal, etc.).
+
+Prefer fast unit tests for services/validators; use FastAPI `TestClient` / `httpx` for API routes.
+
+Run locally before push:
 
 ```powershell
 cd backend
@@ -36,7 +42,8 @@ Phase 8 may extend CI (frontend build, Docker image, deploy). Do **not** wait un
 
 ## Agent checklist before phase push
 
-- [ ] New behavior has tests
+- [ ] Features developed with **TDD** (tests first, then implementation)
+- [ ] New behavior has tests (happy + failure paths)
 - [ ] `pytest -q` passes in `backend/.venv`
 - [ ] Plans / status tracker updated
 - [ ] Commit message names the completed phase

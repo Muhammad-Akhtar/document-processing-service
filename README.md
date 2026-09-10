@@ -19,8 +19,9 @@ Default branch is **`master`**. GitHub Actions runs on each push: [`.github/work
 | Phase | Status |
 |-------|--------|
 | 0 Repo & dev env | Done |
-| Testing & CI baseline | Done |
-| 1+ | Follow [`plans/00-INDEX.md`](plans/00-INDEX.md) |
+| Testing & CI baseline | Done (TDD required) |
+| 1 Backend foundation | Done |
+| 2+ | Follow [`plans/00-INDEX.md`](plans/00-INDEX.md) |
 
 ### Quick start (backend)
 

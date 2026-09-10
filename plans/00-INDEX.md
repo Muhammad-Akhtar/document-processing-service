@@ -66,7 +66,7 @@ document-processing-service/          # this monorepo (or sibling repos later)
 4. Do **not** skip security controls listed in Phase 0/7 when adding upload/conversion features.
 5. Prefer implementing **converter plugins** behind a shared `Converter` interface (see Phase 1–2).
 6. Keep conversion **out of FastAPI route bodies** once Phase 6 lands; until then sync conversion is OK behind a service layer.
-7. Add **unit/API tests for every new case** in the phase; keep [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) green. See [10-testing-and-ci.md](10-testing-and-ci.md).
+7. Follow **TDD** and keep [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) green. See [10-testing-and-ci.md](10-testing-and-ci.md).
 8. After each phase completes: commit and **`git push origin master`**.
 
 ## Progressive build rule
@@ -87,8 +87,8 @@ Do not introduce Kubernetes, OpenTelemetry, or S3 on day one.
 | Phase | Status | Notes |
 |-------|--------|-------|
 | 0 Repo & dev env | Done | Skeleton, venv (3.13), health, Docker stubs, CI + test conventions |
-| Testing & CI baseline | Done | `ci.yml` on `master`; see plan 10 |
-| 1 Backend foundation | Not started | |
+| Testing & CI baseline | Done | `ci.yml` on `master`; TDD required — see plan 10 |
+| 1 Backend foundation | Done | Upload/validate/storage/preview; converter stubs; TDD |
 | 2 HTML → PDF | Not started | |
 | 3 PDF → HTML | Not started | |
 | 4 Frontend | Not started | |
@@ -107,4 +107,4 @@ Do not introduce Kubernetes, OpenTelemetry, or S3 on day one.
 
 ---
 
-**Next:** [02-phase-1-backend-foundation.md](02-phase-1-backend-foundation.md)
+**Next:** [03-phase-2-html-to-pdf.md](03-phase-2-html-to-pdf.md)
