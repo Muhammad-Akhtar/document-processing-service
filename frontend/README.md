@@ -4,7 +4,7 @@ React + TypeScript UI for upload, preview, convert, download/delete, and local h
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js **22+** (Vitest 5 / Vite 8 require modern Node; CI uses Node 22)
 - Backend running (venv uvicorn on `:8000` or Docker API on `:8008`)
 
 ## Setup
@@ -53,7 +53,7 @@ npm run dev
 | `npm run dev` | Vite dev server |
 | `npm run build` | Production build |
 | `npm run preview` | Preview production build |
-| `npm test` | Vitest unit tests |
+| `npm test` | Vitest unit + integration tests |
 | `npm run lint` | Oxlint |
 
 ## Notes

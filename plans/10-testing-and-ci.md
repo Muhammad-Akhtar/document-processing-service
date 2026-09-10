@@ -46,7 +46,7 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 
 - Triggers on **push** and **pull_request** to `master`
 - Job `backend`: apt WeasyPrint libs + ruff + pytest (`WEASYPRINT_REQUIRED=1`)
-- Job `docker`: `docker compose run --rm --build test` (image target `test`)
+- Job `frontend`: Node **22**, `npm ci`, Vitest (unit + integration), production build
 
 Phase 8 may extend CI (frontend build, deploy). Do **not** wait until Phase 8 to keep the backend green — every phase push must pass this workflow.
 
