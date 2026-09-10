@@ -10,7 +10,11 @@ This converter is **layout-aware and best-effort**, not a perfect semantic recon
   - Each span positioned with `left`/`top` from its bounding box
   - Font size, approximate font family, and text color preserved in CSS
   - Bold / italic inferred from font name and span flags (`<strong>` / `<em>`)
-- Maps URI annotations via `page.get_links()` onto overlapping spans as `<a href="...">` (http/https only)
+- Maps URI annotations via `page.get_links()` onto overlapping spans as `<a href="...">` (`http` / `https` / `mailto`)
+- Renders vector drawings from `page.get_drawings()`:
+  - Filled rectangles (including WeasyPrint **even-odd** double-rect section underlines)
+  - Axis-aligned stroked line segments
+  - Skips full-page white background washes
 - Extracts embedded images into `assets/` and positions them when bbox data is available
 - Surfaces encrypted / unreadable PDFs as structured errors
 
@@ -18,9 +22,9 @@ This converter is **layout-aware and best-effort**, not a perfect semantic recon
 
 - Perfect **semantic** table / list reconstruction (two-column text may *look* aligned but is not a `<table>`)
 - OCR for scanned (image-only) pages
-- Form fields, annotations other than URI links, or JavaScript
+- Form fields, non-URI annotations, or JavaScript
 - Exact embedded font files / perfect kerning
-- Vector drawings, lines, or underlines as SVG
+- Complex curves, diagonal strokes, or full SVG path fidelity
 - Password-protected PDFs (no password API yet)
 
 ## Round-trip note

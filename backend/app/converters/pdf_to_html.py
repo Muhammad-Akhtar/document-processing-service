@@ -13,8 +13,10 @@ from app.core.exceptions import ConversionAppError, ValidationAppError
 logger = logging.getLogger(__name__)
 
 _PDF_SUFFIXES = {".pdf"}
-_SAFE_URI_SCHEMES = {"http", "https"}
+_SAFE_URI_SCHEMES = {"http", "https", "mailto"}
 _LINK_OVERLAP_PAD = 1.0
+_MIN_DRAWING_SIZE = 0.15  # pt — skip degenerate fragments
+_PAGE_BG_COVERAGE = 0.9
 
 
 class PdfToHtmlConverter:
@@ -96,7 +98,7 @@ class PdfToHtmlConverter:
 
         warnings.append(
             "PDF → HTML v2 uses absolute visual layout; semantic structure "
-            "(tables, lists) is not reconstructed."
+            "(tables, lists) and complex vector paths are limited."
         )
 
         return ConversionResult(
@@ -127,6 +129,11 @@ def _page_to_html(
     ]
 
     uri_links = _uri_links(page)
+
+    # Drawings first (z-index 0) so text/images paint above section rules / shapes.
+    drawing_parts, drawing_warnings = _drawings_to_html(page)
+    parts.extend(drawing_parts)
+    warnings.extend(drawing_warnings)
 
     try:
         data = page.get_text("dict", flags=0)
@@ -200,7 +207,14 @@ def _safe_http_uri(uri: str) -> bool:
         parsed = urlparse(uri.strip())
     except Exception:
         return False
-    return parsed.scheme.lower() in _SAFE_URI_SCHEMES and bool(parsed.netloc)
+    scheme = parsed.scheme.lower()
+    if scheme not in _SAFE_URI_SCHEMES:
+        return False
+    if scheme == "mailto":
+        # mailto:user@host — path or netloc may hold the address
+        address = (parsed.path or parsed.netloc or "").strip()
+        return "@" in address and " " not in address
+    return bool(parsed.netloc)
 
 
 def _find_uri_for_bbox(
@@ -255,6 +269,7 @@ def _span_to_html(
         f"font-size:{size_css}",
         "white-space:pre",
         "line-height:1.15",
+        "z-index:1",
     ]
     color_css = _color_to_css(color)
     if color_css:
@@ -322,6 +337,231 @@ def _color_to_css(color: object) -> str | None:
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
+def _rgb_tuple_to_css(rgb: object) -> str | None:
+    if not rgb or not isinstance(rgb, (tuple, list)) or len(rgb) < 3:
+        return None
+    try:
+        r, g, b = (float(rgb[0]), float(rgb[1]), float(rgb[2]))
+    except (TypeError, ValueError):
+        return None
+    # PyMuPDF drawing colors are 0..1; tolerate 0..255
+    if r > 1 or g > 1 or b > 1:
+        return f"rgb({int(r)},{int(g)},{int(b)})"
+    return f"rgb({int(round(r * 255))},{int(round(g * 255))},{int(round(b * 255))})"
+
+
+def _drawings_to_html(page) -> tuple[list[str], list[str]]:
+    """Render vector drawings (section rules, filled boxes, stroked lines)."""
+    parts: list[str] = []
+    warnings: list[str] = []
+    try:
+        drawings = page.get_drawings()
+    except Exception as exc:
+        logger.warning("Drawing extraction failed: %s", exc)
+        return [], ["Drawing extraction failed on a page"]
+
+    page_rect = page.rect
+    for drawing in drawings:
+        try:
+            parts.extend(_drawing_to_elements(drawing, page_rect))
+        except Exception as exc:
+            logger.warning("Skipping drawing: %s", exc)
+            warnings.append("Skipped a vector drawing on a page")
+    return parts, warnings
+
+
+def _drawing_to_elements(drawing: dict, page_rect) -> list[str]:
+    fill = drawing.get("fill")
+    stroke = drawing.get("color")
+    fill_css = _rgb_tuple_to_css(fill)
+    stroke_css = _rgb_tuple_to_css(stroke)
+    opacity = drawing.get("fill_opacity")
+    if opacity is None:
+        opacity = 1.0
+
+    items = drawing.get("items") or []
+    rect_items = [it[1] for it in items if it and it[0] == "re" and len(it) >= 2]
+    line_items = [it for it in items if it and it[0] == "l"]
+
+    visible_rects: list[tuple[float, float, float, float]] = []
+
+    if rect_items:
+        aa_rects = [_normalize_rect(r) for r in rect_items]
+        aa_rects = [r for r in aa_rects if r is not None]
+        if drawing.get("even_odd") and len(aa_rects) >= 2:
+            # WeasyPrint section underlines: two overlapping rects with even-odd
+            # fill → thin visible band (XOR), not a solid heading background.
+            visible_rects = _even_odd_union_xor(aa_rects)
+        else:
+            visible_rects = aa_rects
+
+    elements: list[str] = []
+    for rect in visible_rects:
+        if _is_page_background(rect, page_rect, fill):
+            continue
+        x0, y0, x1, y1 = rect
+        w, h = x1 - x0, y1 - y0
+        if w < _MIN_DRAWING_SIZE or h < _MIN_DRAWING_SIZE:
+            continue
+        bg = fill_css or stroke_css
+        if not bg:
+            continue
+        style = (
+            f"position:absolute;left:{round(x0, 2):g}pt;top:{round(y0, 2):g}pt;"
+            f"width:{round(w, 2):g}pt;height:{round(h, 2):g}pt;"
+            f"background:{bg};z-index:0"
+        )
+        if opacity < 1.0:
+            style += f";opacity:{opacity:g}"
+        elements.append(f'<div class="pdf-drawing" style="{style}"></div>')
+
+    # Stroked line segments (type "l")
+    stroke_width = float(drawing.get("width") or 1.0)
+    if stroke_css and line_items:
+        for item in line_items:
+            if len(item) < 3:
+                continue
+            p1, p2 = item[1], item[2]
+            line_el = _stroke_line_to_html(p1, p2, stroke_css, stroke_width)
+            if line_el:
+                elements.append(line_el)
+
+    return elements
+
+
+def _normalize_rect(rect) -> tuple[float, float, float, float] | None:
+    try:
+        x0, y0, x1, y1 = float(rect.x0), float(rect.y0), float(rect.x1), float(rect.y1)
+    except Exception:
+        try:
+            x0, y0, x1, y1 = (float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
+        except Exception:
+            return None
+    if x1 < x0:
+        x0, x1 = x1, x0
+    if y1 < y0:
+        y0, y1 = y1, y0
+    return (x0, y0, x1, y1)
+
+
+def _is_page_background(
+    rect: tuple[float, float, float, float],
+    page_rect,
+    fill: object,
+) -> bool:
+    x0, y0, x1, y1 = rect
+    pw, ph = float(page_rect.width), float(page_rect.height)
+    if pw <= 0 or ph <= 0:
+        return False
+    covers = ((x1 - x0) / pw) >= _PAGE_BG_COVERAGE and ((y1 - y0) / ph) >= _PAGE_BG_COVERAGE
+    if not covers:
+        return False
+    # Near-white / empty fill page wash
+    if not fill:
+        return True
+    try:
+        r, g, b = float(fill[0]), float(fill[1]), float(fill[2])
+        if r > 1:
+            r, g, b = r / 255.0, g / 255.0, b / 255.0
+        return r >= 0.95 and g >= 0.95 and b >= 0.95
+    except Exception:
+        return True
+
+
+def _even_odd_union_xor(
+    rects: list[tuple[float, float, float, float]],
+) -> list[tuple[float, float, float, float]]:
+    """Visible bands for even-odd fill of axis-aligned rectangles (pairwise XOR fold)."""
+    if not rects:
+        return []
+    result: list[tuple[float, float, float, float]] = [rects[0]]
+    for nxt in rects[1:]:
+        updated: list[tuple[float, float, float, float]] = []
+        for cur in result:
+            updated.extend(_rect_xor(cur, nxt))
+        # Also parts of nxt not in any previous — handled by xor with each; for
+        # sequential fold of nested WeasyPrint pairs, pairwise xor is enough.
+        result = _merge_adjacent_rects(updated)
+        if not result:
+            # First xor emptied; treat nxt as seed if odd count remaining — rare.
+            result = [nxt]
+    return result
+
+
+def _rect_xor(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> list[tuple[float, float, float, float]]:
+    return _rect_subtract(a, b) + _rect_subtract(b, a)
+
+
+def _rect_subtract(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> list[tuple[float, float, float, float]]:
+    """Axis-aligned A − B as up to four rectangles."""
+    ax0, ay0, ax1, ay1 = a
+    bx0, by0, bx1, by1 = b
+    ix0, iy0 = max(ax0, bx0), max(ay0, by0)
+    ix1, iy1 = min(ax1, bx1), min(ay1, by1)
+    if ix1 <= ix0 or iy1 <= iy0:
+        return [a]
+    out: list[tuple[float, float, float, float]] = []
+    if ay0 < iy0:
+        out.append((ax0, ay0, ax1, iy0))
+    if iy1 < ay1:
+        out.append((ax0, iy1, ax1, ay1))
+    if ax0 < ix0:
+        out.append((ax0, iy0, ix0, iy1))
+    if ix1 < ax1:
+        out.append((ix1, iy0, ax1, iy1))
+    return out
+
+
+def _merge_adjacent_rects(
+    rects: list[tuple[float, float, float, float]],
+) -> list[tuple[float, float, float, float]]:
+    """Light cleanup: drop empties; keep fragments (no heavy merge needed)."""
+    cleaned: list[tuple[float, float, float, float]] = []
+    for x0, y0, x1, y1 in rects:
+        if (x1 - x0) >= _MIN_DRAWING_SIZE and (y1 - y0) >= _MIN_DRAWING_SIZE:
+            cleaned.append((x0, y0, x1, y1))
+    return cleaned
+
+
+def _stroke_line_to_html(p1, p2, color_css: str, width: float) -> str | None:
+    try:
+        x1, y1 = float(p1.x), float(p1.y)
+        x2, y2 = float(p2.x), float(p2.y)
+    except Exception:
+        try:
+            x1, y1 = float(p1[0]), float(p1[1])
+            x2, y2 = float(p2[0]), float(p2[1])
+        except Exception:
+            return None
+
+    # Axis-aligned lines → thin div; diagonals skipped for now.
+    if abs(y1 - y2) <= 0.5:
+        x0, x1b = min(x1, x2), max(x1, x2)
+        y = min(y1, y2)
+        h = max(width, 0.5)
+        return (
+            f'<div class="pdf-drawing" style="position:absolute;left:{round(x0, 2):g}pt;'
+            f"top:{round(y - h / 2, 2):g}pt;width:{round(x1b - x0, 2):g}pt;"
+            f'height:{round(h, 2):g}pt;background:{color_css};z-index:0"></div>'
+        )
+    if abs(x1 - x2) <= 0.5:
+        y0, y1b = min(y1, y2), max(y1, y2)
+        x = min(x1, x2)
+        w = max(width, 0.5)
+        return (
+            f'<div class="pdf-drawing" style="position:absolute;left:{round(x - w / 2, 2):g}pt;'
+            f"top:{round(y0, 2):g}pt;width:{round(w, 2):g}pt;"
+            f'height:{round(y1b - y0, 2):g}pt;background:{color_css};z-index:0"></div>'
+        )
+    return None
+
+
 def _image_block_to_html(
     doc,
     block: dict,
@@ -355,7 +595,7 @@ def _image_block_to_html(
         logger.warning("Failed writing image %s: %s", name, exc)
         return None, f"Skipped image on page {page_number}", image_index
 
-    style_parts = ["position:absolute"]
+    style_parts = ["position:absolute", "z-index:1"]
     if bbox and len(bbox) >= 4:
         x0, y0, x1, y1 = (float(bbox[0]), float(bbox[1]), float(bbox[2]), float(bbox[3]))
         style_parts.extend(
@@ -406,7 +646,7 @@ def _fallback_images(
                     r = rects[0]
                     style = (
                         f"position:absolute;left:{float(r.x0):g}pt;top:{float(r.y0):g}pt;"
-                        f"width:{float(r.width):g}pt;height:{float(r.height):g}pt"
+                        f"width:{float(r.width):g}pt;height:{float(r.height):g}pt;z-index:1"
                     )
             except Exception:
                 pass
@@ -454,6 +694,9 @@ def _wrap_document(*, title: str, body: str) -> str:
     }}
     .pdf-image {{
       display: block;
+    }}
+    .pdf-drawing {{
+      pointer-events: none;
     }}
   </style>
 </head>

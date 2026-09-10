@@ -10,6 +10,7 @@ from app.converters.registry import get_default_registry
 from app.core.exceptions import ConversionAppError, ValidationAppError
 
 _SAMPLE_PDF = Path(__file__).parent / "fixtures" / "pdf_to_html" / "sample.pdf"
+_SAMPLE_2_PDF = Path(__file__).parent / "fixtures" / "pdf_to_html" / "sample_2.pdf"
 
 
 def _write_simple_pdf(path: Path, text: str = "Hello Phase 3 PDF") -> None:
@@ -63,6 +64,35 @@ def _write_linked_pdf(path: Path) -> None:
             "kind": fitz.LINK_URI,
             "from": rect,
             "uri": "https://example.com/profile",
+        }
+    )
+    doc.save(path)
+    doc.close()
+
+
+def _write_underline_drawing_pdf(path: Path) -> None:
+    """WeasyPrint-style even-odd double rect → thin horizontal rule."""
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    page.insert_text((40, 100), "SECTION HEADING", fontsize=14, fontname="hebo")
+    shape = page.new_shape()
+    shape.draw_rect(fitz.Rect(40, 90, 560, 118))
+    shape.draw_rect(fitz.Rect(40, 90, 560, 120))
+    shape.finish(fill=(0.1, 0.2, 0.35), even_odd=True)
+    shape.commit()
+    doc.save(path)
+    doc.close()
+
+
+def _write_mailto_pdf(path: Path) -> None:
+    doc = fitz.open()
+    page = doc.new_page(width=612, height=792)
+    page.insert_text((40, 100), "user@example.com", fontsize=11, fontname="helv")
+    page.insert_link(
+        {
+            "kind": fitz.LINK_URI,
+            "from": fitz.Rect(40, 88, 160, 110),
+            "uri": "mailto:user@example.com",
         }
     )
     doc.save(path)
@@ -142,6 +172,41 @@ def test_pdf_to_html_preserves_hyperlinks(tmp_path: Path) -> None:
     assert 'href="https://example.com/profile"' in html
     assert "<a " in html
     assert "LinkedIn" in html
+
+
+def test_pdf_to_html_even_odd_section_rule(tmp_path: Path) -> None:
+    src = tmp_path / "rule.pdf"
+    _write_underline_drawing_pdf(src)
+    dst = tmp_path / "out.html"
+    PdfToHtmlConverter().convert(src, dst)
+    html = dst.read_text(encoding="utf-8")
+    assert "pdf-drawing" in html
+    assert "SECTION HEADING" in html
+    # Thin band (~2pt), not a solid ~30pt heading background.
+    assert "height:2pt" in html or "height:2.0pt" in html
+
+
+def test_pdf_to_html_mailto_links(tmp_path: Path) -> None:
+    src = tmp_path / "mail.pdf"
+    _write_mailto_pdf(src)
+    dst = tmp_path / "out.html"
+    PdfToHtmlConverter().convert(src, dst)
+    html = dst.read_text(encoding="utf-8")
+    assert 'href="mailto:user@example.com"' in html
+
+
+def test_pdf_to_html_sample_2_drawings_and_mailto(tmp_path: Path) -> None:
+    assert _SAMPLE_2_PDF.is_file(), "sample_2.pdf fixture missing"
+    dst = tmp_path / "sample2_out.html"
+    result = PdfToHtmlConverter().convert(_SAMPLE_2_PDF, dst)
+    html = dst.read_text(encoding="utf-8")
+    assert result.success is True
+    assert "PROFESSIONAL SUMMARY" in html
+    assert "TECHNICAL SKILLS" in html
+    assert html.count('class="pdf-drawing"') >= 3
+    assert "rgb(26,54,93)" in html.replace(" ", "")
+    assert 'href="mailto:akhtarm821@gmail.com"' in html
+    assert "linkedin.com/in/muhammad-akhtar-47b1a4102" in html
 
 
 def test_pdf_to_html_sample_fixture_layout(tmp_path: Path) -> None:

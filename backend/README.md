@@ -107,7 +107,8 @@ POST /api/v1/conversions
 {"source_document_id": "<uuid>", "target_format": "html"}
 ```
 
-Best-effort **layout-aware (v2)** HTML via PyMuPDF: absolute page positioning, span fonts/styles, URI links, and images under `assets/`  
+Best-effort **layout-aware (v2)** HTML via PyMuPDF: absolute page positioning, span fonts/styles,
+URI/mailto links, vector section rules (`get_drawings`), and images under `assets/`  
 (`GET /api/v1/documents/{id}/assets/{name}`). Limitations: [`docs/pdf-to-html-limitations.md`](docs/pdf-to-html-limitations.md).
 
 ## Security
